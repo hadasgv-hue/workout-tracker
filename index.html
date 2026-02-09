@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מעקב אימוני בוקר</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&family=Heebo:wght@900&display=swap');
+        
+        :root {
+            --primary: #B4F73D;
+            --secondary: #B283FF;
+            --dark: #1C1C1C;
+            --darker: #0a0a0a;
+            --accent: #B283FF;
+            --success: #B4F73D;
+            --bg: #000000;
+            --card: #1C1C1C;
+            --text: #FFFFFF;
+            --text-dim: #8E8E93;
+            --border: transparent;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Assistant', sans-serif;
+            background: #000000;
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: #000000;
+            padding: 2rem 1.5rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-family: 'Heebo', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: #FFFFFF;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -1px;
+        }
+        
+        .header .emoji {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            padding: 1rem 1.5rem;
+            background: transparent;
+        }
+        
+        .days-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .day-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid rgba(178, 131, 255, 0.3);
+            background: rgba(178, 131, 255, 0.1);
+            color: var(--text-dim);
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .day-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+        }
+        
+        .day-btn.active {
+            background: linear-gradient(135deg, #B4F73D, #a0e030);
+            border-color: #B4F73D;
+            color: #1C1C1C;
+            box-shadow: 0 3px 15px rgba(180, 247, 61, 0.5);
+        }
+        
+        .day-btn.today {
+            border-color: var(--accent);
+            border-width: 3px;
+        }
+        
+        .day-letter {
+            font-size: 1rem;
+        }
+        
+        /* Weekly Calendar */
+        .week-calendar-container {
+            padding: 0 1.5rem 1rem;
+            background: transparent;
+        }
+        
+        .week-calendar {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #1C1C1C;
+            padding: 1rem;
+            border-radius: 20px;
+        }
+        
+        .day-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: none;
+            background: #2C2C2E;
+            color: #8E8E93;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .day-btn:hover {
+            transform: scale(1.1);
+            background: #3C3C3E;
+        }
+        
+        .day-btn.active {
+            background: #B4F73D;
+            color: #1C1C1C;
+        }
+        
+        .day-btn.today {
+            border: 3px solid #B283FF;
+        }
+        
+        .day-letter {
+            font-size: 1rem;
+        }
+        
+        .week-summary {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(180, 247, 61, 0.15), rgba(178, 131, 255, 0.15));
+            border: 2px solid rgba(180, 247, 61, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 5px 20px rgba(180, 247, 61, 0.4);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            font-family: 'Heebo', sans-serif;
+        }
+        
+        .container {
+            padding: 1.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .workout-complete-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: #B4F73D;
+            color: #1C1C1C;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(180, 247, 61, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .workout-complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(180, 247, 61, 0.3);
+        }
+        
+        .workout-complete-btn:active {
+            transform: translateY(0);
+        }
+        
+        .reset-sets-btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: #2C2C2E;
+            color: #8E8E93;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .reset-sets-btn:hover {
+            background: #3C3C3E;
+            transform: translateY(-2px);
+        }
+        
+        .exercise-card {
+            background: #1C1C1C;
+            border-radius: 25px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border: none;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: slideIn 0.5s ease forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .exercise-card:nth-child(1) { animation-delay: 0.1s; }
+        .exercise-card:nth-child(2) { animation-delay: 0.2s; }
+        .exercise-card:nth-child(3) { animation-delay: 0.3s; }
+        .exercise-card:nth-child(4) { animation-delay: 0.4s; }
+        .exercise-card:nth-child(5) { animation-delay: 0.5s; }
+        .exercise-card:nth-child(6) { animation-delay: 0.6s; }
+        .exercise-card:nth-child(7) { animation-delay: 0.7s; }
+        
+        .exercise-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .exercise-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .exercise-sets {
+            font-size: 0.9rem;
+            color: #8E8E93;
+            background: #2C2C2E;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+        
+        .video-container {
+            background: #2C2C2E;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: none;
+        }
+        
+        .video-demo-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            color: #B283FF;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: 'Assistant', sans-serif;
+        }
+        
+        .video-demo-btn:hover {
+            background: rgba(178, 131, 255, 0.1);
+        }
+        
+        .play-icon {
+            font-size: 1.5rem;
+            color: #B283FF;
+        }
+        
+        .weight-section {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .weight-display {
+            flex: 1;
+            background: #2A2333;
+            border: none;
+            border-radius: 15px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .weight-label {
+            font-size: 0.85rem;
+            color: #8E8E93;
+            margin-bottom: 0.3rem;
+        }
+        
+        .weight-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #B283FF;
+            font-family: 'Heebo', sans-serif;
+        }
+        
+        .time-section {
+            background: #2A2333;
+            border: none;
+            border-radius: 15px;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .time-display {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #B283FF;
+            font-family: 'Heebo', sans-serif;
+            direction: ltr;
+        }
+        
+        .update-weight-btn {
+            flex: 1;
+            padding: 1rem;
+            background: #B4F73D;
+            color: #1C1C1C;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(180, 247, 61, 0.2);
+        }
+        
+        .update-weight-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(180, 247, 61, 0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: #1C1C1C;
+            padding: 2rem;
+            border-radius: 25px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .modal-input {
+            width: 100%;
+            padding: 1rem;
+            background: #2C2C2E;
+            border: none;
+            border-radius: 15px;
+            color: #FFFFFF;
+            font-size: 1.5rem;
+            font-family: 'Assistant', sans-serif;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-input:focus {
+            outline: none;
+            background: #2A2333;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-btn.save {
+            background: #B4F73D;
+            color: #1C1C1C;
+        }
+        
+        .modal-btn.cancel {
+            background: #2C2C2E;
+            color: #FFFFFF;
+            border: none;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #B4F73D;
+            color: #1C1C1C;
+            padding: 2rem 3rem;
+            border-radius: 25px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(180, 247, 61, 0.3);
+            display: none;
+            animation: popIn 0.5s ease;
+        }
+        
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: #1C1C1C;
+            padding: 0.5rem;
+            border-radius: 20px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 0.8rem 0.5rem;
+            background: transparent;
+            color: #8E8E93;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            background: #B4F73D;
+            color: #1C1C1C;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .streak-card {
+            background: linear-gradient(135deg, rgba(180, 247, 61, 0.15), rgba(178, 131, 255, 0.15));
+            border: 2px solid rgba(180, 247, 61, 0.3);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .streak-number {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary);
+            font-family: 'Heebo', sans-serif;
+        }
+        
+        .streak-label {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-top: 0.5rem;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.4rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #2C2C2E;
+            color: #8E8E93;
+            padding: 0.3rem;
+        }
+        
+        .calendar-day.header {
+            background: transparent;
+            color: #B4F73D;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.5rem 0.3rem;
+        }
+        
+        .calendar-day.worked {
+            background: #B4F73D;
+            color: #1C1C1C;
+        }
+        
+        .calendar-day.today {
+            border: 3px solid #B283FF;
+        }
+        
+        .pr-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #1C1C1C;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+        
+        .history-item {
+            background: var(--darker);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-date {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+        
+        .history-weight {
+            color: var(--primary);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        
+        .chart-container {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .exercise-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .exercise-btn {
+            padding: 1rem;
+            background: #2C2C2E;
+            color: #8E8E93;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .exercise-btn:hover {
+            background: #3C3C3E;
+            transform: translateY(-2px);
+        }
+        
+        .exercise-btn.active {
+            background: #B4F73D;
+            color: #1C1C1C;
+        }
+        
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 900;
+            font-family: 'Heebo', sans-serif;
+            color: var(--primary);
+            text-align: center;
+            margin: 1rem 0;
+            direction: ltr;
+        }
+        
+        .timer-display.warning {
+            color: #FFA500;
+        }
+        
+        .timer-display.danger {
+            color: #FF4444;
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .timer-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timer-btn.start {
+            background: linear-gradient(135deg, #B4F73D, #a0e030);
+            color: #1C1C1C;
+        }
+        
+        .timer-btn.stop {
+            background: linear-gradient(135deg, #FF4444, #CC0000);
+            color: white;
+        }
+        
+        .timer-btn.reset {
+            background: var(--card);
+            color: var(--text);
+            border: 2px solid var(--text-dim);
+        }
+        
+        /* Set Circles & Inline Timer */
+        .exercise-bottom {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        
+        .set-circles {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .set-circle {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #2C2C2E;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #8E8E93;
+            font-family: 'Heebo', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .set-circle.completed {
+            background: #B4F73D;
+            color: #1C1C1C;
+        }
+        
+        .timer-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .timer-button {
+            width: 100%;
+            padding: 0.8rem;
+            background: #2C2C2E;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Assistant', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timer-button.active {
+            background: #B283FF;
+            color: #1C1C1C;
+        }
+        
+        .timer-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .timer-display-small {
+            font-size: 1.3rem;
+            font-weight: 800;
+            font-family: 'Heebo', sans-serif;
+            color: #B4F73D;
+            text-align: center;
+            direction: ltr;
+            padding: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="emoji">💪</span>
+        <h1>אימוני הבוקר שלי</h1>
+    </div>
+    
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">אימונים השבוע</div>
+            <div class="stat-value" id="weeklyCount">0</div>
+        </div>
+    </div>
+    
+    <div class="week-calendar-container">
+        <div class="week-calendar">
+            <button class="day-btn" data-day="0" onclick="toggleDay(0)">
+                <span class="day-letter">א</span>
+            </button>
+            <button class="day-btn" data-day="1" onclick="toggleDay(1)">
+                <span class="day-letter">ב</span>
+            </button>
+            <button class="day-btn" data-day="2" onclick="toggleDay(2)">
+                <span class="day-letter">ג</span>
+            </button>
+            <button class="day-btn" data-day="3" onclick="toggleDay(3)">
+                <span class="day-letter">ד</span>
+            </button>
+            <button class="day-btn" data-day="4" onclick="toggleDay(4)">
+                <span class="day-letter">ה</span>
+            </button>
+            <button class="day-btn" data-day="5" onclick="toggleDay(5)">
+                <span class="day-letter">ו</span>
+            </button>
+            <button class="day-btn" data-day="6" onclick="toggleDay(6)">
+                <span class="day-letter">ש</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('workouts')">תרגילים</button>
+            <button class="tab" onclick="switchTab('progress')">התקדמות</button>
+            <button class="tab" onclick="switchTab('calendar')">לוח שנה</button>
+        </div>
+        
+        <!-- Workouts Tab -->
+        <div id="workouts-tab" class="tab-content active">
+        
+        <!-- Exercise Cards -->
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">סקווטים</div>
+                <div class="exercise-sets">10×3</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=l83R5PblSMA" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="weight-section">
+                <div class="weight-display">
+                    <div class="weight-label">משקל אחרון</div>
+                    <div class="weight-value" id="weight-squats">0</div>
+                </div>
+                <button class="update-weight-btn" onclick="openModal('squats', 'סקווטים')">עדכון משקל</button>
+            </div>
+            <div class="exercise-bottom">
+                <div class="set-circles">
+                    <div class="set-circle" id="squats-set-1">1</div>
+                    <div class="set-circle" id="squats-set-2">2</div>
+                    <div class="set-circle" id="squats-set-3">3</div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-display-small" id="squats-timer">01:00</div>
+                    <button class="timer-button" id="squats-timer-btn" onclick="toggleTimer('squats')">
+                        ⏱️ הפסקה דקה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">דדליפט</div>
+                <div class="exercise-sets">10×3</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=plb5jEO4Unw" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="weight-section">
+                <div class="weight-display">
+                    <div class="weight-label">משקל אחרון</div>
+                    <div class="weight-value" id="weight-deadlift">0</div>
+                </div>
+                <button class="update-weight-btn" onclick="openModal('deadlift', 'דדליפט')">עדכון משקל</button>
+            </div>
+            <div class="exercise-bottom">
+                <div class="set-circles">
+                    <div class="set-circle" id="deadlift-set-1">1</div>
+                    <div class="set-circle" id="deadlift-set-2">2</div>
+                    <div class="set-circle" id="deadlift-set-3">3</div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-display-small" id="deadlift-timer">01:00</div>
+                    <button class="timer-button" id="deadlift-timer-btn" onclick="toggleTimer('deadlift')">
+                        ⏱️ הפסקה דקה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">לחיצות חזה</div>
+                <div class="exercise-sets">10×3</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=bgC53-J-6gA" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="weight-section">
+                <div class="weight-display">
+                    <div class="weight-label">משקל אחרון</div>
+                    <div class="weight-value" id="weight-bench">0</div>
+                </div>
+                <button class="update-weight-btn" onclick="openModal('bench', 'לחיצות חזה')">עדכון משקל</button>
+            </div>
+            <div class="exercise-bottom">
+                <div class="set-circles">
+                    <div class="set-circle" id="bench-set-1">1</div>
+                    <div class="set-circle" id="bench-set-2">2</div>
+                    <div class="set-circle" id="bench-set-3">3</div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-display-small" id="bench-timer">01:00</div>
+                    <button class="timer-button" id="bench-timer-btn" onclick="toggleTimer('bench')">
+                        ⏱️ הפסקה דקה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">חתירה בכל יד</div>
+                <div class="exercise-sets">10×3</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=ZRSGpBUVcNw" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="weight-section">
+                <div class="weight-display">
+                    <div class="weight-label">משקל אחרון</div>
+                    <div class="weight-value" id="weight-rows">0</div>
+                </div>
+                <button class="update-weight-btn" onclick="openModal('rows', 'חתירה בכל יד')">עדכון משקל</button>
+            </div>
+            <div class="exercise-bottom">
+                <div class="set-circles">
+                    <div class="set-circle" id="rows-set-1">1</div>
+                    <div class="set-circle" id="rows-set-2">2</div>
+                    <div class="set-circle" id="rows-set-3">3</div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-display-small" id="rows-timer">01:00</div>
+                    <button class="timer-button" id="rows-timer-btn" onclick="toggleTimer('rows')">
+                        ⏱️ הפסקה דקה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">לאנצ'ים</div>
+                <div class="exercise-sets">10×3</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=xrPteyQLGAo" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="weight-section">
+                <div class="weight-display">
+                    <div class="weight-label">משקל אחרון</div>
+                    <div class="weight-value" id="weight-lunges">0</div>
+                </div>
+                <button class="update-weight-btn" onclick="openModal('lunges', 'לאנצ׳ים')">עדכון משקל</button>
+            </div>
+            <div class="exercise-bottom">
+                <div class="set-circles">
+                    <div class="set-circle" id="lunges-set-1">1</div>
+                    <div class="set-circle" id="lunges-set-2">2</div>
+                    <div class="set-circle" id="lunges-set-3">3</div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-display-small" id="lunges-timer">01:00</div>
+                    <button class="timer-button" id="lunges-timer-btn" onclick="toggleTimer('lunges')">
+                        ⏱️ הפסקה דקה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">לחיצות כתף</div>
+                <div class="exercise-sets">10×3</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=TsduLWuhlFM" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="weight-section">
+                <div class="weight-display">
+                    <div class="weight-label">משקל אחרון</div>
+                    <div class="weight-value" id="weight-shoulder">0</div>
+                </div>
+                <button class="update-weight-btn" onclick="openModal('shoulder', 'לחיצות כתף')">עדכון משקל</button>
+            </div>
+            <div class="exercise-bottom">
+                <div class="set-circles">
+                    <div class="set-circle" id="shoulder-set-1">1</div>
+                    <div class="set-circle" id="shoulder-set-2">2</div>
+                    <div class="set-circle" id="shoulder-set-3">3</div>
+                </div>
+                <div class="timer-section">
+                    <div class="timer-display-small" id="shoulder-timer">01:00</div>
+                    <button class="timer-button" id="shoulder-timer-btn" onclick="toggleTimer('shoulder')">
+                        ⏱️ הפסקה דקה
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="exercise-card">
+            <div class="exercise-header">
+                <div class="exercise-name">פלאנק</div>
+                <div class="exercise-sets">זמן מקסימלי</div>
+            </div>
+            <div class="video-container">
+                <a href="https://www.youtube.com/watch?v=q4rDeHYMcIg" target="_blank" class="video-demo-btn">
+                    <span class="play-icon">▶</span>
+                    <span>צפי בהדגמה</span>
+                </a>
+            </div>
+            <div class="time-section">
+                <div class="weight-label">זמן אחרון</div>
+                <div class="time-display" id="time-plank">00:00</div>
+            </div>
+            <div class="timer-section" style="width: 100%;">
+                <div class="timer-display-small" id="plank-timer">00:00</div>
+                <button class="timer-button" id="plank-timer-btn" onclick="togglePlankTimer()">
+                    ▶ התחל מדידה
+                </button>
+            </div>
+        </div>
+        
+        <!-- End Workouts Tab -->
+        </div>
+        
+        <!-- Progress Tab -->
+        <div id="progress-tab" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">גרף התקדמות משקולות</div>
+                <canvas id="progressChart"></canvas>
+                <div class="exercise-buttons">
+                    <button class="exercise-btn active" data-exercise="squats" onclick="selectExercise('squats')">סקווטים</button>
+                    <button class="exercise-btn" data-exercise="shoulder" onclick="selectExercise('shoulder')">לחיצות כתף</button>
+                    <button class="exercise-btn" data-exercise="deadlift" onclick="selectExercise('deadlift')">דדליפט</button>
+                    <button class="exercise-btn" data-exercise="bench" onclick="selectExercise('bench')">לחיצות חזה</button>
+                    <button class="exercise-btn" data-exercise="rows" onclick="selectExercise('rows')">חתירה</button>
+                    <button class="exercise-btn" data-exercise="lunges" onclick="selectExercise('lunges')">לאנצ'ים</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title" id="historyTitle">היסטוריה - סקווטים</div>
+                <div id="exerciseHistory"></div>
+            </div>
+        </div>
+        
+        <!-- Calendar Tab -->
+        <div id="calendar-tab" class="tab-content">
+            <div class="streak-card">
+                <div class="streak-number" id="streakNumber">0</div>
+                <div class="streak-label">ימים ברצף 🔥</div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">לוח שנה - החודש הנוכחי</div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Weight Update Modal -->
+    <div id="weightModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">עדכון משקל</div>
+            <input type="number" id="weightInput" class="modal-input" placeholder="הכנס משקל (ק״ג)" step="0.5" min="0">
+            <div class="modal-buttons">
+                <button class="modal-btn save" onclick="saveWeight()">שמור</button>
+                <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Update Modal -->
+    <div id="timeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">עדכון זמן פלאנק</div>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="number" id="minutesInput" class="modal-input" placeholder="דקות" min="0" max="59" style="flex: 1;">
+                <input type="number" id="secondsInput" class="modal-input" placeholder="שניות" min="0" max="59" style="flex: 1;">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn save" onclick="saveTime()">שמור</button>
+                <button class="modal-btn cancel" onclick="closeTimeModal()">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="success-message">
+        ✓ עודכן בהצלחה!
+    </div>
+
+    <script>
+        // ===== EXERCISE TIMERS & SETS ===== (Global scope)
+        var exerciseTimers = {};
+        var exercises = ['squats', 'shoulder', 'deadlift', 'bench', 'rows', 'lunges'];
+        
+        // Initialize timers for each exercise
+        exercises.forEach(function(ex) {
+            exerciseTimers[ex] = {
+                interval: null,
+                seconds: 60,
+                currentSet: 0
+            };
+        });
+        
+        function toggleTimer(exercise) {
+            var timer = exerciseTimers[exercise];
+            var btn = document.getElementById(exercise + '-timer-btn');
+            
+            if (timer.interval) {
+                // Stop timer
+                clearInterval(timer.interval);
+                timer.interval = null;
+                timer.seconds = 60;
+                updateTimerDisplay(exercise);
+                btn.classList.remove('active');
+                btn.textContent = '⏱️ הפסקה דקה';
+            } else {
+                // Start timer
+                btn.classList.add('active');
+                btn.textContent = '⏸ עצור';
+                
+                timer.interval = setInterval(function() {
+                    timer.seconds--;
+                    updateTimerDisplay(exercise);
+                    
+                    if (timer.seconds <= 0) {
+                        // Timer finished
+                        clearInterval(timer.interval);
+                        timer.interval = null;
+                        timer.seconds = 60;
+                        updateTimerDisplay(exercise);
+                        btn.classList.remove('active');
+                        btn.textContent = '⏱️ הפסקה דקה';
+                        
+                        // Mark set as complete
+                        completeSet(exercise);
+                        
+                        // Play sound
+                        playBeep();
+                    }
+                }, 1000);
+            }
+        }
+        
+        function updateTimerDisplay(exercise) {
+            var timer = exerciseTimers[exercise];
+            var mins = Math.floor(timer.seconds / 60);
+            var secs = timer.seconds % 60;
+            document.getElementById(exercise + '-timer').textContent = 
+                String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+        
+        function completeSet(exercise) {
+            var timer = exerciseTimers[exercise];
+            timer.currentSet++;
+            
+            if (timer.currentSet <= 3) {
+                var circle = document.getElementById(exercise + '-set-' + timer.currentSet);
+                if (circle) {
+                    circle.classList.add('completed');
+                }
+            }
+            
+            // Save progress
+            localStorage.setItem(exercise + '-sets', timer.currentSet);
+        }
+        
+        // Load sets progress
+        function loadSets() {
+            // Check if it's a new day and reset if needed
+            const lastWorkoutDate = localStorage.getItem('last-workout-date');
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (lastWorkoutDate !== today) {
+                // New day - reset all sets
+                resetAllSets();
+                localStorage.setItem('last-workout-date', today);
+            }
+            
+            exercises.forEach(function(ex) {
+                var completed = parseInt(localStorage.getItem(ex + '-sets') || '0');
+                exerciseTimers[ex].currentSet = completed;
+                
+                for (var i = 1; i <= completed && i <= 3; i++) {
+                    var circle = document.getElementById(ex + '-set-' + i);
+                    if (circle) {
+                        circle.classList.add('completed');
+                    }
+                }
+            });
+        }
+        
+        // Reset sets
+        function resetAllSets() {
+            exercises.forEach(function(ex) {
+                exerciseTimers[ex].currentSet = 0;
+                localStorage.setItem(ex + '-sets', '0');
+                
+                for (var i = 1; i <= 3; i++) {
+                    var circle = document.getElementById(ex + '-set-' + i);
+                    if (circle) {
+                        circle.classList.remove('completed');
+                    }
+                }
+            });
+        }
+        
+        // ===== PLANK TIMER =====
+        var plankTimer = {
+            interval: null,
+            seconds: 0
+        };
+        
+        function togglePlankTimer() {
+            var btn = document.getElementById('plank-timer-btn');
+            
+            if (plankTimer.interval) {
+                // Stop timer and save
+                clearInterval(plankTimer.interval);
+                plankTimer.interval = null;
+                btn.classList.remove('active');
+                btn.textContent = '▶ התחל מדידה';
+                
+                // Save time
+                var mins = Math.floor(plankTimer.seconds / 60);
+                var secs = plankTimer.seconds % 60;
+                var timeStr = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+                localStorage.setItem('time-plank', timeStr);
+                document.getElementById('time-plank').textContent = timeStr;
+                
+                plankTimer.seconds = 0;
+                updatePlankDisplay();
+                showSuccess();
+            } else {
+                // Start timer
+                plankTimer.seconds = 0;
+                btn.classList.add('active');
+                btn.textContent = '⏹ עצור ושמור';
+                
+                plankTimer.interval = setInterval(function() {
+                    plankTimer.seconds++;
+                    updatePlankDisplay();
+                }, 1000);
+            }
+        }
+        
+        function updatePlankDisplay() {
+            var mins = Math.floor(plankTimer.seconds / 60);
+            var secs = plankTimer.seconds % 60;
+            document.getElementById('plank-timer').textContent = 
+                String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+        
+        function playBeep() {
+            try {
+                // Create audio context
+                var AudioContext = window.AudioContext || window.webkitAudioContext;
+                var audioContext = new AudioContext();
+                
+                // Resume context if suspended (needed for mobile)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                var oscillator = audioContext.createOscillator();
+                var gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+                
+                // Vibrate if available (mobile)
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+            } catch (e) {
+                // Fallback to vibration only
+                console.log('Audio failed, trying vibration');
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]);
+                }
+            }
+        }
+        
+        // ===== ORIGINAL CODE BELOW =====
+        let currentExercise = '';
+        
+        // Get current week key (Sunday to Saturday)
+        function getWeekKey() {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+            const sunday = new Date(now);
+            sunday.setDate(now.getDate() - dayOfWeek);
+            sunday.setHours(0, 0, 0, 0);
+            return `week-${sunday.getTime()}`;
+        }
+        
+        // Load data from localStorage
+        function loadData() {
+            const exercises = ['squats', 'shoulder', 'deadlift', 'bench', 'rows', 'lunges'];
+            exercises.forEach(ex => {
+                const weight = localStorage.getItem(`weight-${ex}`) || '0';
+                document.getElementById(`weight-${ex}`).textContent = weight;
+            });
+            
+            const plankTime = localStorage.getItem('time-plank') || '00:00';
+            document.getElementById('time-plank').textContent = plankTime;
+            
+            loadWeekDays();
+        }
+        
+        function loadWeekDays() {
+            const weekKey = getWeekKey();
+            const weekData = JSON.parse(localStorage.getItem(weekKey) || '{}');
+            
+            // Clear old weeks
+            cleanOldWeeks();
+            
+            // Update day buttons
+            let count = 0;
+            const today = new Date().getDay();
+            
+            for (let i = 0; i < 7; i++) {
+                const btn = document.querySelector(`.day-btn[data-day="${i}"]`);
+                if (!btn) continue;
+                
+                if (weekData[i]) {
+                    btn.classList.add('active');
+                    count++;
+                } else {
+                    btn.classList.remove('active');
+                }
+                
+                // Mark today's button
+                if (i === today) {
+                    btn.classList.add('today');
+                } else {
+                    btn.classList.remove('today');
+                }
+            }
+            
+            document.getElementById('weeklyCount').textContent = count;
+        }
+        
+        function toggleDay(day) {
+            const weekKey = getWeekKey();
+            const weekData = JSON.parse(localStorage.getItem(weekKey) || '{}');
+            
+            // Toggle the day
+            if (weekData[day]) {
+                delete weekData[day];
+            } else {
+                weekData[day] = true;
+            }
+            
+            localStorage.setItem(weekKey, JSON.stringify(weekData));
+            loadWeekDays();
+            showSuccess();
+        }
+        
+        function cleanOldWeeks() {
+            const currentWeekKey = getWeekKey();
+            const keys = Object.keys(localStorage);
+            
+            keys.forEach(key => {
+                if (key.startsWith('week-') && key !== currentWeekKey) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+        
+        function openModal(exercise, title) {
+            currentExercise = exercise;
+            document.getElementById('modalTitle').textContent = `עדכון משקל - ${title}`;
+            const currentWeight = localStorage.getItem(`weight-${exercise}`) || '0';
+            document.getElementById('weightInput').value = parseFloat(currentWeight) || '';
+            document.getElementById('weightModal').classList.add('active');
+            setTimeout(() => document.getElementById('weightInput').focus(), 100);
+        }
+        
+        function closeModal() {
+            document.getElementById('weightModal').classList.remove('active');
+            document.getElementById('weightInput').value = '';
+        }
+        
+        function saveWeight() {
+            const weight = document.getElementById('weightInput').value;
+            if (weight && parseFloat(weight) >= 0) {
+                localStorage.setItem(`weight-${currentExercise}`, weight);
+                document.getElementById(`weight-${currentExercise}`).textContent = weight;
+                closeModal();
+                showSuccess();
+            }
+        }
+        
+        function openTimeModal() {
+            const currentTime = localStorage.getItem('time-plank') || '00:00';
+            const [mins, secs] = currentTime.split(':').map(Number);
+            document.getElementById('minutesInput').value = mins || '';
+            document.getElementById('secondsInput').value = secs || '';
+            document.getElementById('timeModal').classList.add('active');
+            setTimeout(() => document.getElementById('minutesInput').focus(), 100);
+        }
+        
+        function closeTimeModal() {
+            document.getElementById('timeModal').classList.remove('active');
+            document.getElementById('minutesInput').value = '';
+            document.getElementById('secondsInput').value = '';
+        }
+        
+        function saveTime() {
+            const mins = parseInt(document.getElementById('minutesInput').value) || 0;
+            const secs = parseInt(document.getElementById('secondsInput').value) || 0;
+            
+            if (mins >= 0 && secs >= 0 && secs < 60) {
+                const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                localStorage.setItem('time-plank', timeStr);
+                document.getElementById('time-plank').textContent = timeStr;
+                closeTimeModal();
+                showSuccess();
+            }
+        }
+        
+        function showSuccess() {
+            const msg = document.getElementById('successMessage');
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 2000);
+        }
+        
+        // Close modals on background click
+        document.getElementById('weightModal').addEventListener('click', (e) => {
+            if (e.target.id === 'weightModal') closeModal();
+        });
+        
+        document.getElementById('timeModal').addEventListener('click', (e) => {
+            if (e.target.id === 'timeModal') closeTimeModal();
+        });
+        
+        // Enter key to save
+        document.getElementById('weightInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveWeight();
+        });
+        
+        document.getElementById('minutesInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('secondsInput').focus();
+        });
+        
+        document.getElementById('secondsInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveTime();
+        });
+        
+        // Load data on page load
+        loadData();
+        
+        // ===== TAB SWITCHING =====
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data for specific tabs
+            if (tabName === 'progress') {
+                updateProgressChart();
+                updateHistory();
+            } else if (tabName === 'calendar') {
+                renderCalendar();
+                updateStreak();
+            }
+        }
+        
+        // ===== PROGRESS & CHARTS =====
+        let progressChart = null;
+        let currentProgressExercise = 'squats';
+        
+        function selectExercise(exercise) {
+            currentProgressExercise = exercise;
+            
+            // Update button states
+            document.querySelectorAll('.exercise-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.exercise-btn[data-exercise="${exercise}"]`).classList.add('active');
+            
+            // Update chart and history
+            updateProgressChart();
+            updateHistory();
+        }
+        
+        function updateProgressChart() {
+            const exercise = currentProgressExercise;
+            const history = JSON.parse(localStorage.getItem(`history-${exercise}`) || '[]');
+            
+            const canvas = document.getElementById('progressChart');
+            const ctx = canvas.getContext('2d');
+            
+            if (progressChart) {
+                progressChart.destroy();
+            }
+            
+            if (history.length === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#8E8E93';
+                ctx.font = '16px Assistant';
+                ctx.textAlign = 'center';
+                ctx.fillText('אין נתונים עדיין', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+            
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => new Date(h.date).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' })),
+                    datasets: [{
+                        label: 'משקל (ק״ג)',
+                        data: history.map(h => h.weight),
+                        borderColor: '#B4F73D',
+                        backgroundColor: 'rgba(180, 247, 61, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#FFFFFF' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: { color: '#8E8E93' },
+                            grid: { color: '#2C2C2E' }
+                        },
+                        x: {
+                            ticks: { color: '#8E8E93' },
+                            grid: { color: '#2C2C2E' }
+                        }
+                    }
+                }
+            });
+            
+            updateHistory();
+        }
+        
+        function updateHistory() {
+            const exercise = currentProgressExercise;
+            const history = JSON.parse(localStorage.getItem(`history-${exercise}`) || '[]');
+            const historyDiv = document.getElementById('exerciseHistory');
+            const titles = {
+                'squats': 'סקווטים',
+                'shoulder': 'לחיצות כתף',
+                'deadlift': 'דדליפט',
+                'bench': 'לחיצות חזה',
+                'rows': 'חתירה',
+                'lunges': 'לאנצ׳ים'
+            };
+            
+            document.getElementById('historyTitle').textContent = `היסטוריה - ${titles[exercise]}`;
+            
+            if (history.length === 0) {
+                historyDiv.innerHTML = '<div class="no-data">אין היסטוריה עדיין</div>';
+                return;
+            }
+            
+            const pr = Math.max(...history.map(h => h.weight));
+            const sorted = [...history].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+            
+            historyDiv.innerHTML = sorted.map(h => `
+                <div class="history-item">
+                    <div class="history-date">${new Date(h.date).toLocaleDateString('he-IL')}</div>
+                    <div>
+                        ${h.weight === pr ? '<span class="pr-badge">🏆 שיא!</span>' : ''}
+                        <span class="history-weight">${h.weight} ק״ג</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Save weight with history
+        const originalSaveWeight = saveWeight;
+        saveWeight = function() {
+            const weight = document.getElementById('weightInput').value;
+            if (weight && parseFloat(weight) >= 0) {
+                const exercise = currentExercise;
+                
+                // Save weight
+                localStorage.setItem(`weight-${exercise}`, weight);
+                document.getElementById(`weight-${exercise}`).textContent = weight;
+                
+                // Save to history
+                const history = JSON.parse(localStorage.getItem(`history-${exercise}`) || '[]');
+                history.push({
+                    date: new Date().toISOString(),
+                    weight: parseFloat(weight)
+                });
+                localStorage.setItem(`history-${exercise}`, JSON.stringify(history));
+                
+                closeModal();
+                showSuccess();
+            }
+        };
+        
+        // ===== CALENDAR =====
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = now.getDate();
+            
+            const workouts = JSON.parse(localStorage.getItem('workout-dates') || '[]');
+            const workoutDates = workouts.map(d => new Date(d).getDate());
+            
+            let html = '';
+            
+            // Headers
+            ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'].forEach(day => {
+                html += `<div class="calendar-day header">${day}</div>`;
+            });
+            
+            // Empty cells before first day
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day"></div>';
+            }
+            
+            // Days
+            for (let day = 1; day <= daysInMonth; day++) {
+                let classes = 'calendar-day';
+                if (workoutDates.includes(day)) classes += ' worked';
+                if (day === today) classes += ' today';
+                
+                html += `<div class="${classes}">${day}</div>`;
+            }
+            
+            grid.innerHTML = html;
+        }
+        
+        function updateStreak() {
+            const workouts = JSON.parse(localStorage.getItem('workout-dates') || '[]').map(d => new Date(d));
+            workouts.sort((a, b) => b - a);
+            
+            let streak = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let i = 0; i < workouts.length; i++) {
+                const workoutDate = new Date(workouts[i]);
+                workoutDate.setHours(0, 0, 0, 0);
+                
+                const expectedDate = new Date(today);
+                expectedDate.setDate(today.getDate() - streak);
+                
+                if (workoutDate.getTime() === expectedDate.getTime()) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            document.getElementById('streakNumber').textContent = streak;
+        }
+        
+        // Load sets on page load
+        loadSets();
+    </script>
+</body>
+</html>
